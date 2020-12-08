@@ -1,0 +1,231 @@
+<?php
+ini_set('display_errors',0);
+ini_set('display_startup_errors',0);
+error_reporting(E_ALL);
+
+/*
+Plugin Name: AAU DTU
+Plugin URI: 
+Description: aau.dk crawler
+Version: 1.0
+Author: XX
+Author Email: XX
+*/
+require_once(ABSPATH . 'wp-config.php'); 
+require_once(ABSPATH . 'wp-includes/wp-db.php'); 
+require_once(ABSPATH . 'wp-admin/includes/taxonomy.php'); 
+
+define('AAU_DTU_DIR', plugin_dir_path(__FILE__));
+define('AAU_DTU_URL', plugin_dir_url(__FILE__));
+
+
+add_action('wp_loaded', 'getJobs6');
+
+function AAU_DTU_load(){
+
+   //require_once(SDU_DK_DIR.'includes/lib.php');
+}
+
+function AAU_DTU_activate() {
+
+    global $wpdb;
+	$sCrSQL   = 'CREATE TABLE IF NOT EXISTS `jobs` (
+	  `id` int(11) NOT NULL AUTO_INCREMENT,
+	  `uid` varchar(255) NOT NULL,
+	  `title` varchar(255) NOT NULL,
+	  `description` mediumtext NOT NULL,
+	  `location` varchar(255) NOT NULL,
+	  `unit` varchar(255) NOT NULL,
+	  `campus` varchar(255) NOT NULL,
+	  `deadline` date NOT NULL,
+	  `email` varchar(255) NOT NULL,
+	  `phone` varchar(255) NOT NULL,
+	  `url` varchar(255) NOT NULL,
+	  `source` varchar(255) NOT NULL,
+	  PRIMARY KEY (`id`),
+	  UNIQUE KEY `uid_2` (`uid`),
+	  KEY `uid` (`uid`)
+	) ENGINE=MyISAM  DEFAULT CHARSET=utf8;';
+	$wpdb->query($sCrSQL);
+
+}
+
+register_activation_hook( __FILE__, 'AAU_DTU_activate' );
+
+
+
+function getJobs6()
+{
+	global $wpdb;
+	if(isset($_REQUEST['crawler'])&&$_REQUEST['crawler']=='run')
+	{
+		$sBaseURL = 'http://www.vacancies.aau.dk/';
+		$sResultsPage = downloadPage($sBaseURL);
+		preg_match_all("/<a class=\"smallButton expandableAddon\" href=\"(.*?)\">View more<\/a>/",$sResultsPage,$aList);
+		if(isset($aList[1]))
+		{
+			for($iList = 0; $iList < count($aList[1]); $iList++)
+			{
+				$sListLink = 'http://www.vacancies.aau.dk'.$aList[1][ $iList];
+				$sListPage = downloadPage($sListLink);
+				preg_match_all("/<li itemtype=\"http:\/\/schema.org\/Event\" itemscope=\"\"><a title=\"\" class=\"hasArrowBelow\" href=\"(.*?)\">                <h3 itemprop=\"name\">(.*?)<\/h3><p class=\"muted\">(.*?).middot.(.*?)<br \/>   .middot.(.*?)<\/p><\/a>            <\/li>/",$sListPage,$aJobs);
+				if(isset($aJobs[1]))
+				{
+					for($iJob = 1; $iJob < count($aJobs[2]); $iJob++)
+					{
+						$sDetailLink = 'http://www.vacancies.aau.dk'.$aJobs[1][$iJob];
+						$aID = explode('vacancy=',$aJobs[1][$iJob]);
+						$sUID = isset($aID[count($aID)-1])?$aID[count($aID)-1]:'';
+						preg_match("/>(.*?)<\/a>/",$aJobs[1][$iJob],$aData);
+						$sTitle = isset($aJobs[2][$iJob])?$aJobs[2][$iJob]:'';
+						$sUnit = isset($aJobs[4][$iJob])?$aJobs[4][$iJob]:'';
+						
+						if(strpos($sUnit,'muted')!==false)
+						{
+							$aUnit = explode('&middot;',$sUnit);
+							$sUnit = isset($aUnit[2])?$aUnit[2]:'';
+						}
+						$iCategoryID = 0;
+						if(
+							strpos($sUnit,'Communication and Psychology')!==false||
+							strpos($sUnit,'Culture and Global Studies')!==false||
+							strpos($sUnit,'Learning and Philosophy')!==false
+						   )
+						
+						
+						{
+							$iCategoryID = 1;
+						}
+						if(
+							strpos($sUnit,'Design and Media Technology')!==false||
+							strpos($sUnit,'Civil Engineering')!==false||
+							strpos($sUnit,'Computer Science')!==false||
+							strpos($sUnit,'Electronic Systems')!==false||
+							strpos($sUnit,'Building Research Institute')!==false||
+							strpos($sUnit,'Manufacturing Engineering')!==false
+						   )
+						
+						
+						{
+							$iCategoryID = 7;
+						}
+						if(
+							strpos($sUnit,'Business and Management')!==false||
+							strpos($sUnit,'Department of Law')!==false||
+							strpos($sUnit,'Political Science')!==false||
+							strpos($sUnit,'Social Work')!==false
+						   )
+						
+						
+						{
+							$iCategoryID = 3;
+						}
+						if(
+							strpos($sUnit,'Chemistry and Bioscience')!==false||
+							strpos($sUnit,'Clinical Medicine')!==false||
+							strpos($sUnit,'Science and Technology')!==false
+							
+						   )
+						
+						
+						{
+							$iCategoryID = 39;
+						}
+						if(
+							strpos($sUnit,'Development and Planning')!==false||
+							strpos($sUnit,'Mathematical Sciences')!==false||
+							strpos($sUnit,'Physics and Nanotechnology')!==false||
+							strpos($sUnit,'Energy Technology')!==false
+							
+						   )
+						
+						
+						{
+							$iCategoryID = 9;
+						}
+						
+						/*$aCategory = term_exists($sUnit, 'category');
+						if ($aCategory !== 0 && $aCategory !== null)
+						{
+						  $iCategoryID = $aCategory['term_id'];
+						}
+						else
+						{
+							$aCategory = array('cat_name' => $sUnit, 'category_description' => '','category_nicename' => '', 'category_parent' => '');
+							$iCategoryID = wp_insert_category($aCategory);
+						}*/
+						preg_match("/Deadline(.*?)<\/p>/",$aJobs[1][$iJob],$aData);
+						$sDate = isset($aJobs[5][$iJob])?date('Y-m-d',strtotime(trim(str_replace('Deadline','',$aJobs[5][$iJob])))):'';
+						$sChSQL = 'SELECT count(*) as iRec FROM `jobs` WHERE `uid`="'.$sUID.'"';
+						$oCheck = $wpdb->get_row( $wpdb->prepare($sChSQL,''));
+						if($oCheck->iRec==0&&
+
+						(strpos($sTitle,'phd')!==false||strpos($sTitle,'postdoc')!==false||strpos($sTitle,'Ph.D.')!==false||strpos($sTitle,'PhD')!==false||(strpos($sTitle,'postdoc')!==false||strpos($sTitle,'doc')!==false))	
+
+						)
+
+						{ 
+                                                    
+
+							$sDetailPage = downloadPage($sDetailLink);
+							preg_match("/<\/h1>(.*?)<h2>(Vacancy number|Stillingsnummer)/",$sDetailPage,$aData);
+							$sDescription = isset($aData[1])?trim(strip_tags($aData[1],'<ul><li><br><p><span><b><strong><h1><h2><h3><h4><h5><h6>')):'';
+							$sEmail = $sPhone = '';
+							$sISQL  = 'INSERT INTO  `jobs` SET ';
+							$sISQL .= '`title`="'.addslashes($sTitle).'",';
+							$sISQL .= '`uid`="'.addslashes($sUID).'",';
+							$sISQL .= '`description`="'.addslashes($sDescription).'",';
+							$sISQL .= '`unit`="'.addslashes($sUnit).'",';
+							$sISQL .= '`deadline`="'.addslashes($sDate).'",';
+							$sISQL .= '`email`="'.addslashes($sEmail).'",';
+							$sISQL .= '`phone`="'.addslashes($sPhone).'",';
+							$sISQL .= '`source`="aau.dk",';
+							$sISQL .= '`url`="'.addslashes($sDetailLink).'"';
+
+							$wpdb->query($sISQL);
+							$sDescription .= "<br /><strong>Deadline:</strong> ".date('j F Y',strtotime($sDate));
+							$sDescription .= "<br /><strong>Unit:</strong> ".$sUnit;
+							$sDescription .= "<br /><a target=\"_blank\" href='".$sDetailLink."'>Read the job description and apply online</a> ";
+
+							$aPost = array(
+
+								 'post_title' => $sTitle,
+								 'post_content' => $sDescription,
+								 'post_category' => array($iCategoryID),
+								 'post_status' => 'publish',
+								 'post_author' => 1
+
+							  );
+
+							$iPostID = wp_insert_post($aPost);
+
+							wp_set_post_tags($iPostID,'AAU');
+							$opts = array();
+							$opts['expireType'] = 'draft';
+							$opts['id'] = $iPostID;
+							$tExpiredTime = strtotime($sDate);
+							$tExpiredTime = date('Y-m-d 00:00:00',$tExpiredTime);
+							$tExpiredTime = get_gmt_from_date($tExpiredTime,'U');
+							_scheduleExpiratorEvent($iPostID,$tExpiredTime,$opts);
+
+						}
+
+					}
+
+				}
+
+			}
+
+		}
+
+	}
+
+}
+
+
+
+AAU_DTU_load();
+
+
+
+?>
