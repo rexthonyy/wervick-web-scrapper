@@ -31,14 +31,8 @@
 				$job['title'] = $title->innertext;
 				$job['description'] = getDescription($title->href);
 				$job['location'] = 'Oslo';
-				$unit = '';
-				if(isset($topDepartmentName)){
-					$unit = str_replace('Department: ', '', $department->innertext).' '.str_replace('Faculty: ', '', $topDepartmentName->innertext);
-				}else{
-					$unit = str_replace('Department: ', '', $department->innertext);
-				}
-				$job['unit'] = $unit;
-				$job['campus'] = 'University of Oslo';
+				$job['unit'] = str_replace('Department: ', '', $department->innertext);
+				$job['campus'] = '';
 				$job['deadline'] = getFormattedDeadline($deadline->innertext);
 				$job['email'] = '';
 				$job['phone'] = '';
@@ -131,20 +125,30 @@
 		$url = "https://id.jobbnorge.no/api/joblisting?jobId=$jobId&languageId=2&v=23c18cc5-9a3a-4bc3-80db-c890ab4c9173";
 		$data = json_decode(curlGET($url));
 
-		if(isset($data->components[1]->text)){
-			return $data->components[1]->text;
-		}else{
-			for($i = 0; $i < count($data->components); $i++){
-				if(isset($data->components[$i]->heading)){
-					if($data->components[$i]->heading == 'Job description'){
-						if(isset($data->components[$i]->text)){
-							return $data->components[$i]->text;
-						}
-					}
-				}
+		$data->components[0]->applyLink = 'https://www.jobbnorge.no/jobseeker/#/application/apply/'.$jobId;
+
+		$html = '';
+
+		for($i = 0; $i < count($data->components); $i++){
+			if(isset($data->components[$i]->heading)){
+				$html .= '<br/>';
+				$html .= '<h1>'.$data->components[$i]->heading.'</h1>';
 			}
-			return '';
+			if(isset($data->components[$i]->text)){
+				$html .= '<p>'.$data->components[$i]->text.'</p>';
+			}
+			if(isset($data->components[$i]->applyLink)){
+				$html .= '<a href='.$data->components[$i]->applyLink.'>Apply for this job</a>';
+			}
+			if(isset($data->components[$i]->column1)){
+				$html .= '<p>'.$data->components[$i]->column1.'</p>';
+			}
+			if(isset($data->components[$i]->column2)){
+				$html .= '<p>'.$data->components[$i]->column2.'</p>';
+			}
 		}
+
+		return $html;
 	}
 
 	function curlGET($postUrl) {
@@ -170,4 +174,10 @@
 
         return $results;
     }
+
+    $sBaseURL = 'https://www.uio.no/english/about/jobs/vacancies/';
+    $sJobs = getJobListFromURL($sBaseURL);
+    
+    echo "<pre>";
+    print_r($sJobs);
 ?>
