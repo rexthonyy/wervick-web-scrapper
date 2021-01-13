@@ -180,7 +180,11 @@
                         stripos($sTitle,'PhD')!==false||
                         stripos($sTitle,'doc')!==false
                     )
+<<<<<<< HEAD
                 )//if there is no entries with that id and the title contains researcher in its title
+=======
+                )
+>>>>>>> 14807394fe3cf148566f4af5ca6bdc4de6faacec
                 {
                     $sISQL  = 'INSERT INTO  `jobs` SET ';
                     $sISQL .= '`title`="'.addslashes($sTitle).'",';
@@ -203,7 +207,11 @@
                     $sDescription .= "<br /><a target=\"_blank\" href='".$sApplyLink."'>Apply for job</a> ";
                     
                     $aPost = array(
+<<<<<<< HEAD
                          'post_status' => 'draft',
+=======
+                         'post_status' => 'delete',
+>>>>>>> 14807394fe3cf148566f4af5ca6bdc4de6faacec
 						 'post_title' => $sTitle,
 						 'post_content' => $sDescription,
 						 'post_category' => array($iCategoryID),
