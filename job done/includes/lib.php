@@ -30,6 +30,7 @@
 			    $job['uid'] = getJobId($title->href);
 				$job['title'] = $title->innertext;
 				$job['description'] = getDescription($title->href);
+				$job['applyLink'] = getApplyLink($title->href);
 				$job['location'] = 'Oslo';
 				$job['unit'] = str_replace('Department: ', '', $department->innertext);
 				$job['campus'] = '';
@@ -120,31 +121,30 @@
 		return $urlList[count($urlList) - 2];
 	}
 
+	function getApplyLink($url){
+		$jobId = getJobId($url);
+		return 'https://www.jobbnorge.no/jobseeker/#/application/apply/'.$jobId;
+	}
+	
 	function getDescription($url){
 		$jobId = getJobId($url);
 		$url = "https://id.jobbnorge.no/api/joblisting?jobId=$jobId&languageId=2&v=23c18cc5-9a3a-4bc3-80db-c890ab4c9173";
 		$data = json_decode(curlGET($url));
 
-		$data->components[0]->applyLink = 'https://www.jobbnorge.no/jobseeker/#/application/apply/'.$jobId;
-
 		$html = '';
 
 		for($i = 0; $i < count($data->components); $i++){
 			if(isset($data->components[$i]->heading)){
-				$html .= '<br/>';
-				$html .= '<h1>'.$data->components[$i]->heading.'</h1>';
+				$html .= "<h4 style='margin:0;padding:0;'>".$data->components[$i]->heading."</h4>";
 			}
 			if(isset($data->components[$i]->text)){
-				$html .= '<p>'.$data->components[$i]->text.'</p>';
-			}
-			if(isset($data->components[$i]->applyLink)){
-				$html .= '<a href='.$data->components[$i]->applyLink.'>Apply for this job</a>';
+				$html .= "<p style='margin:0;padding:0;'>".$data->components[$i]->text."</p>";
 			}
 			if(isset($data->components[$i]->column1)){
-				$html .= '<p>'.$data->components[$i]->column1.'</p>';
+				$html .= "<p style='margin:0;padding:0;'>".$data->components[$i]->column1."</p>";
 			}
 			if(isset($data->components[$i]->column2)){
-				$html .= '<p>'.$data->components[$i]->column2.'</p>';
+				$html .= "<p style='margin:0;padding:0;'>".$data->components[$i]->column2."</p>";
 			}
 		}
 
@@ -174,10 +174,4 @@
 
         return $results;
     }
-
-    $sBaseURL = 'https://www.uio.no/english/about/jobs/vacancies/';
-    $sJobs = getJobListFromURL($sBaseURL);
-    
-    echo "<pre>";
-    print_r($sJobs);
 ?>

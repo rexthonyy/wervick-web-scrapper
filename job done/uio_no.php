@@ -3,11 +3,12 @@
     ini_set('display_startup_errors',0);
     error_reporting(E_ALL);
     
+
     /*
     Plugin Name: UIO NO
     Plugin URI: 
     Description: uio.no crawler
-    Version: 1.0
+    Version: 1.1
     Author: Rex Anthony
     Author Email: rexthonyy@gmail.com
     */
@@ -22,33 +23,33 @@
     }
     
     function uio_no_activate() {
-        global $wpdb;
-        $sCrSQL   = 'CREATE TABLE IF NOT EXISTS `jobs` (
-          `id` int(11) NOT NULL AUTO_INCREMENT,
-          `uid` varchar(255) NOT NULL,
-          `title` varchar(255) NOT NULL,
-          `description` mediumtext NOT NULL,
-          `location` varchar(255) NOT NULL,
-          `unit` varchar(255) NOT NULL,
-          `campus` varchar(255) NOT NULL,
-          `deadline` date NOT NULL,
-          `email` varchar(255) NOT NULL,
-          `phone` varchar(255) NOT NULL,
-          `url` varchar(255) NOT NULL,
-          `source` varchar(255) NOT NULL,
-          PRIMARY KEY (`id`),
-          UNIQUE KEY `uid_2` (`uid`),
-          KEY `uid` (`uid`)
-        ) ENGINE=MyISAM  DEFAULT CHARSET=utf8;';
-        $wpdb->query($sCrSQL);
+    	global $wpdb;
+    	$sCrSQL   = 'CREATE TABLE IF NOT EXISTS `jobs` (
+    	  `id` int(11) NOT NULL AUTO_INCREMENT,
+    	  `uid` varchar(255) NOT NULL,
+    	  `title` varchar(255) NOT NULL,
+    	  `description` mediumtext NOT NULL,
+    	  `location` varchar(255) NOT NULL,
+    	  `unit` varchar(255) NOT NULL,
+    	  `campus` varchar(255) NOT NULL,
+    	  `deadline` date NOT NULL,
+    	  `email` varchar(255) NOT NULL,
+    	  `phone` varchar(255) NOT NULL,
+    	  `url` varchar(255) NOT NULL,
+    	  `source` varchar(255) NOT NULL,
+    	  PRIMARY KEY (`id`),
+    	  UNIQUE KEY `uid_2` (`uid`),
+    	  KEY `uid` (`uid`)
+    	) ENGINE=MyISAM  DEFAULT CHARSET=utf8;';
+    	$wpdb->query($sCrSQL);
     }
     
     register_activation_hook( __FILE__, 'uio_no_activate' );
     
     function getJobsFromSite() {
         global $wpdb;
-        if(isset($_REQUEST['crawler'])&&$_REQUEST['crawler']=='run') {
-            $sBaseURL = 'https://www.uio.no/english/about/jobs/vacancies/';
+    	if(isset($_REQUEST['crawler'])&&$_REQUEST['crawler']=='run') {
+    	    $sBaseURL = 'https://www.uio.no/english/about/jobs/vacancies/';
             $sJobs = getJobListFromURL($sBaseURL);
             
             // Iterate through the jobs
@@ -56,6 +57,7 @@
                 $sUID = $job['uid'];
                 $sTitle = $job['title'];
                 $sDescription = $job['description'];
+                $sApplyLink = $job['applyLink'];
                 $sLocation = $job['location'];
                 $sUnit = $job['unit'];
                 $sCampus = $job['campus'];
@@ -69,109 +71,116 @@
                 
                 //Determine the category id
                 if(
-                    strpos($sUnit,'Archaeology Conservation and History')!==false||
-                    strpos($sUnit,'Culture Studies and Oriental Languages')!==false||
-                    strpos($sUnit,'Philosophy, Classics, History of Art and Ideas')!==false||
-                    strpos($sUnit,'Literature, Area Studies and European Languages')!==false||
-                    strpos($sUnit,'Linguistics and Scandinavian Studies')!==false||
-                    strpos($sUnit,'Media and Communication')!==false||
-                    strpos($sUnit,'Musicology')!==false||
-                    strpos($sUnit,'Ibsen Studies')!==false||
-                    strpos($sUnit,'Interdisciplinary Studies in Rhythm, Time and Motion (RITMO)')!==false||
-                    strpos($sUnit,'Multilingualism in Society across the Lifespan')!==false||
-                    strpos($sUnit,'The Norwegian Institute in Rome (Norwegian)')!==false||
-                    strpos($sUnit,'Nordic')!==false||
-                    strpos($sUnit,'Museum of Cultural History')!==false||
-                    strpos($sUnit,'Historical Museum')!==false||
-                    strpos($sUnit,'The Viking Ship Museum')!==false||
-                    strpos($sUnit,'Natural History Museum')!==false||
-                    strpos($sUnit,'Museum of University and Science History')!==false||
-                    strpos($sUnit,'Humanities and Social Sciences Library')!==false
-                )   
-                {
-                    $iCategoryID = 1;
-                }
-                if(
-                    strpos($sUnit,'Criminology and the Sociology of Law')!==false||
-                    strpos($sUnit,'Private Law')!==false||
-                    strpos($sUnit,'Public and International Law')!==false||
-                    strpos($sUnit,'Scandinavian Institute of Maritime Law')!==false||
-                    strpos($sUnit,'European Law')!==false||
-                    strpos($sUnit,'Norwegian Centre for Human Rights')!==false||
-                    strpos($sUnit,'Sociology and Human Geography')!==false||
-                    strpos($sUnit,'Political Science')!==false||
-                    strpos($sUnit,'Psychology')!==false||
-                    strpos($sUnit,'Social Anthropology')!==false||
-                    strpos($sUnit,'Economics')!==false||
-                    strpos($sUnit,'European Studies (Arena)')!==false||
-                    strpos($sUnit,'the Study of Equality, Social Organization and Performance (ESOP)')!==false||
-                    strpos($sUnit,'TIK Centre for Technology, Innovation and Culture')!==false||
-                    strpos($sUnit,'Energy')!==false||
-                    strpos($sUnit,'Social Sciences')!==false||
-                    strpos($sUnit,'Theology')!==false||
-                    strpos($sUnit,'Educational Sciences')!==false||
-                    strpos($sUnit,'Teacher Education and School Research')!==false||
-                    strpos($sUnit,'Special Needs Education')!==false||
-                    strpos($sUnit,'Education')!==false||
-                    strpos($sUnit,'CEMO - Centre for Educational Measurement')!==false||
-                    strpos($sUnit,'Research, Innovation and Competence Development (FIKS)')!==false||
-                    strpos($sUnit,'Quality in Nordic Teaching (Quint)')!==false||
-                    strpos($sUnit,'Professional learning in Teacher education (ProTed)')!==false||
-                    strpos($sUnit,'Law Library')!==false||
-                    strpos($sUnit,'PluriCourts - Centre for the Study of the Legitimate Roles of the Judiciary in the Global Order')!==false
-                )
-                {
-                    $iCategoryID = 3;
-                }
-                if(
-                    strpos($sUnit,'Health and Society')!==false||
-                    strpos($sUnit,'Basic Medical Sciences')!==false||
-                    strpos($sUnit,'Clinical Medicine')!==false||
-                    strpos($sUnit,'CanCell - Centre for Cancer Cell Reprogramming')!==false||
-                    strpos($sUnit,'Centre for Molecular Medicine Norway (NCMM)')!==false||
-                    strpos($sUnit,'Norwegian Centre for Mental Disorders Research (NORMENT)')!==false||
-                    strpos($sUnit,'Life Science')!==false||
-                    strpos($sUnit,'Sustainable Healthcare Education (SHE)')!==false||
-                    strpos($sUnit,'Oral Biology')!==false||
-                    strpos($sUnit,'Clinical Dentistry')!==false||
-                    strpos($sUnit,'Library of medicine and science')!==false
-                )
-                {
-                    $iCategoryId = 16;
-                }
-                if(
-                    strpos($sUnit,'Biosciences')!==false||
-                    strpos($sUnit,'Pharmacy')!==false||
-                    strpos($sUnit,'Institute of Theoretical Astrophysics')!==false||
-                    strpos($sUnit,'Physics')!==false||
-                    strpos($sUnit,'Informatics')!==false||
-                    strpos($sUnit,'Geosciences')!==false||
-                    strpos($sUnit,'Chemistry')!==false||
-                    strpos($sUnit,'Mathematics')!==false||
-                    strpos($sUnit,'Technology Systems')!==false||
-                    strpos($sUnit,'Earth Evolution and Dynamics (CEED)')!==false||
-                    strpos($sUnit,'Biogeochemistry in the Anthropocene (CBA)')!==false||
-                    strpos($sUnit,'Bioinformatics (SBI)')!==false||
-                    strpos($sUnit,'Ecological and Evolutionary Synthesis (CEES)')!==false||
-                    strpos($sUnit,'Materials Science and Nanotechnology (SMN)')!==false||
-                    strpos($sUnit,'Entrepreneurship (SFE)')!==false||
-                    strpos($sUnit,'Hylleraas Centre for Quantum Molecular Sciences')!==false||
-                    strpos($sUnit,'Norwegian Centre for Science Education')!==false||
-                    strpos($sUnit,'The Centre for Theoretical and Computational Chemistry (CTCC)')!==false||
-                    strpos($sUnit,'Computing in Science Education (CCSE)')!==false||
-                    strpos($sUnit,'Teaching and Learning in Science and Technology (KURT)')!==false||
-                    strpos($sUnit,'The Njord Centre')!==false
-                )
-                {
-                    $iCategoryID = 9;
-                }
-                
-                $sChSQL = 'SELECT count(*) as iRec FROM `jobs` WHERE `uid`="'.$sUID.'"';
+					stripos($sUnit,'Archaeology Conservation and History')!==false||
+					stripos($sUnit,'Culture Studies and Oriental Languages')!==false||
+					stripos($sUnit,'Philosophy, Classics, History of Art and Ideas')!==false||
+					stripos($sUnit,'Literature, Area Studies and European Languages')!==false||
+					stripos($sUnit,'Linguistics and Scandinavian Studies')!==false||
+					stripos($sUnit,'Media and Communication')!==false||
+					stripos($sUnit,'Musicology')!==false||
+					stripos($sUnit,'Ibsen Studies')!==false||
+					stripos($sUnit,'Interdisciplinary Studies in Rhythm, Time and Motion (RITMO)')!==false||
+					stripos($sUnit,'Multilingualism in Society across the Lifespan')!==false||
+					stripos($sUnit,'The Norwegian Institute in Rome (Norwegian)')!==false||
+					stripos($sUnit,'Nordic')!==false||
+					stripos($sUnit,'Museum of Cultural History')!==false||
+					stripos($sUnit,'Historical Museum')!==false||
+					stripos($sUnit,'The Viking Ship Museum')!==false||
+					stripos($sUnit,'Natural History Museum')!==false||
+					stripos($sUnit,'Museum of University and Science History')!==false||
+					stripos($sUnit,'Humanities and Social Sciences Library')!==false
+				)	
+				{
+					$iCategoryID = 1;
+				}
+				if(
+					stripos($sUnit,'Criminology and the Sociology of Law')!==false||
+					stripos($sUnit,'Private Law')!==false||
+					stripos($sUnit,'Public and International Law')!==false||
+					stripos($sUnit,'Scandinavian Institute of Maritime Law')!==false||
+					stripos($sUnit,'European Law')!==false||
+					stripos($sUnit,'Norwegian Centre for Human Rights')!==false||
+					stripos($sUnit,'Sociology and Human Geography')!==false||
+					stripos($sUnit,'Political Science')!==false||
+					stripos($sUnit,'Psychology')!==false||
+					stripos($sUnit,'Social Anthropology')!==false||
+					stripos($sUnit,'Economics')!==false||
+					stripos($sUnit,'European Studies (Arena)')!==false||
+					stripos($sUnit,'the Study of Equality, Social Organization and Performance (ESOP)')!==false||
+					stripos($sUnit,'TIK Centre for Technology, Innovation and Culture')!==false||
+					stripos($sUnit,'Energy')!==false||
+					stripos($sUnit,'Social Sciences')!==false||
+					stripos($sUnit,'Theology')!==false||
+					stripos($sUnit,'Educational Sciences')!==false||
+					stripos($sUnit,'Teacher Education and School Research')!==false||
+					stripos($sUnit,'Special Needs Education')!==false||
+					stripos($sUnit,'Education')!==false||
+					stripos($sUnit,'CEMO - Centre for Educational Measurement')!==false||
+					stripos($sUnit,'Research, Innovation and Competence Development (FIKS)')!==false||
+					stripos($sUnit,'Quality in Nordic Teaching (Quint)')!==false||
+					stripos($sUnit,'Professional learning in Teacher education (ProTed)')!==false||
+					stripos($sUnit,'Law Library')!==false||
+					stripos($sUnit,'PluriCourts - Centre for the Study of the Legitimate Roles of the Judiciary in the Global Order')!==false
+			    )
+				{
+					$iCategoryID = 3;
+				}
+				if(
+				    stripos($sUnit,'Health and Society')!==false||
+				    stripos($sUnit,'Basic Medical Sciences')!==false||
+				    stripos($sUnit,'Clinical Medicine')!==false||
+				    stripos($sUnit,'CanCell - Centre for Cancer Cell Reprogramming')!==false||
+				    stripos($sUnit,'Centre for Molecular Medicine Norway (NCMM)')!==false||
+				    stripos($sUnit,'Norwegian Centre for Mental Disorders Research (NORMENT)')!==false||
+				    stripos($sUnit,'Life Science')!==false||
+				    stripos($sUnit,'Sustainable Healthcare Education (SHE)')!==false||
+				    stripos($sUnit,'Oral Biology')!==false||
+				    stripos($sUnit,'Clinical Dentistry')!==false||
+				    stripos($sUnit,'Library of medicine and science')!==false
+				)
+				{
+				    $iCategoryId = 16;
+				}
+				if(
+					stripos($sUnit,'Biosciences')!==false||
+					stripos($sUnit,'Pharmacy')!==false||
+					stripos($sUnit,'Institute of Theoretical Astrophysics')!==false||
+					stripos($sUnit,'Physics')!==false||
+					stripos($sUnit,'Informatics')!==false||
+					stripos($sUnit,'Geosciences')!==false||
+					stripos($sUnit,'Chemistry')!==false||
+					stripos($sUnit,'Mathematics')!==false||
+					stripos($sUnit,'Technology Systems')!==false||
+					stripos($sUnit,'Earth Evolution and Dynamics (CEED)')!==false||
+					stripos($sUnit,'Biogeochemistry in the Anthropocene (CBA)')!==false||
+					stripos($sUnit,'Bioinformatics (SBI)')!==false||
+					stripos($sUnit,'Ecological and Evolutionary Synthesis (CEES)')!==false||
+					stripos($sUnit,'Materials Science and Nanotechnology (SMN)')!==false||
+					stripos($sUnit,'Entrepreneurship (SFE)')!==false||
+					stripos($sUnit,'Hylleraas Centre for Quantum Molecular Sciences')!==false||
+					stripos($sUnit,'Norwegian Centre for Science Education')!==false||
+					stripos($sUnit,'The Centre for Theoretical and Computational Chemistry (CTCC)')!==false||
+					stripos($sUnit,'Computing in Science Education (CCSE)')!==false||
+					stripos($sUnit,'Teaching and Learning in Science and Technology (KURT)')!==false||
+					stripos($sUnit,'The Njord Centre')!==false
+			    )
+				{
+					$iCategoryID = 9;
+				}
+				
+				$sChSQL = 'SELECT count(*) as iRec FROM `jobs` WHERE `uid`="'.$sUID.'"';
                 $oCheck = $wpdb->get_row( $wpdb->prepare($sChSQL,'') );
                     
                 if(
-                    $oCheck->iRec==0 && (strpos($sTitle,'phd')!==false||strpos($sTitle,'postdoc')!==false||strpos($sTitle,'Ph.D.')!==false||strpos($sTitle,'PhD')!==false||(strpos($sTitle,'postdoc')!==false||strpos($sTitle,'doc')!==false))  
-                )
+                    $oCheck->iRec==0 && (
+                        stripos($sTitle,'phd')!==false||
+                        stripos($sTitle,'postdoc')!==false||
+                        stripos($sTitle,'researcher')!==false||
+                        stripos($sTitle,'Ph.D.')!==false||
+                        stripos($sTitle,'PhD')!==false||
+                        stripos($sTitle,'doc')!==false
+                    )
+                )//if there is no entries with that id and the title contains researcher in its title
                 {
                     $sISQL  = 'INSERT INTO  `jobs` SET ';
                     $sISQL .= '`title`="'.addslashes($sTitle).'",';
@@ -182,7 +191,7 @@
                     $sISQL .= '`campus`="'.addslashes($sCampus).'",';
                     $sISQL .= '`deadline`="'.addslashes($sDate).'",';
                     $sISQL .= '`email`="'.addslashes($sEmail).'",';
-                    $sISQL .= '`phone`="'.addslashes($sPhone).'",';
+					$sISQL .= '`phone`="'.addslashes($sPhone).'",';
                     $sISQL .= '`source`="'.addslashes($sSource).'",';
                     $sISQL .= '`url`="'.addslashes($sDetailLink).'"';
                     $wpdb->query($sISQL);
@@ -191,26 +200,41 @@
                     $sDescription .= "<br /><strong>Unit:</strong> ".$sUnit;
                     $sDescription .= "<br /><strong>Campus:</strong> ".$sCampus;
                     $sDescription .= "<br /><a target=\"_blank\" href='".$sDetailLink."'>Read the job description and apply online</a> ";
+                    $sDescription .= "<br /><a target=\"_blank\" href='".$sApplyLink."'>Apply for job</a> ";
                     
                     $aPost = array(
-                         'post_title' => $sTitle,
-                         'post_content' => $sDescription,
-                         'post_category' => array($iCategoryID),
                          'post_status' => 'draft',
-                         'post_author' => 1
-                      );
+						 'post_title' => $sTitle,
+						 'post_content' => $sDescription,
+						 'post_category' => array($iCategoryID),
+						 'post_author' => 1
+					  );
 
-                    $iPostID = wp_insert_post($aPost);
+					$iPostID = wp_insert_post($aPost);
 
-                    wp_set_post_tags($iPostID,'UiO');
-                    $opts = array();
-                    $opts['expireType'] = 'draft';
-                    $opts['id'] = $iPostID;
-                    $tExpiredTime = strtotime($sDate);
-                    $tExpiredTime = date('Y-m-d 00:00:00',$tExpiredTime);
-                    $tExpiredTime = get_gmt_from_date($tExpiredTime,'U');
-                    _scheduleExpiratorEvent($iPostID,$tExpiredTime,$opts);
+					wp_set_post_tags($iPostID,'UiO');
+					$opts = array();
+					$opts['expireType'] = 'draft';
+					$opts['id'] = $iPostID;
+					$tExpiredTime = strtotime($sDate);
+					$tExpiredTime = date('Y-m-d 23:59:00',$tExpiredTime);
+					$tExpiredTime = get_gmt_from_date($tExpiredTime,'U');
+					_scheduleExpiratorEvent($iPostID,$tExpiredTime,$opts);
                 }else{
+                    foreach($wpdb->get_results("SELECT * FROM jobs WHERE title LIKE '".addslashes($sTitle)."';") as $key => $row){
+                        $sql = "UPDATE jobs SET description = '".addslashes($sDescription)."' WHERE id=".$row->id;
+                        $wpdb->query($sql);
+                    }
+                    
+                    $post_id = get_page_by_title($sTitle)->ID;
+                    if($post_id != null){
+                        $current_post = get_post( $post_id, 'ARRAY_A' );
+                        $current_post['post_content'] = $sDescription;
+                        $current_post['post_category'] = array($iCategoryID);
+                        $current_post['post_status'] = 'draft';
+                        $current_post['post_author'] = 1;
+                        wp_update_post($current_post);
+                    }
                 }
                 //     $fields = array();
                 //     $fields['description'] = addslashes($sDescription);
@@ -231,7 +255,7 @@
                 //     wp_update_post($aPost);
                 // }
             }
-        }
+    	}
     }
     
     uio_no_load();
